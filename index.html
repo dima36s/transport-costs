@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Учёт рейсов и расходов</title>
   <meta name="description" content="Журнал рейсов и расходов на транспорт: ввод, итоги по неделям, месяцам и годам, отчёт в Excel">
   <meta name="theme-color" content="#1B4F9C">
@@ -20,8 +20,8 @@
         <span>Учёт рейсов</span>
       </a>
       <nav class="topbar__actions" aria-label="Данные">
-        <button type="button" class="btn btn--ghost" id="btnImport">Загрузить<span class="hide-sm"> из Excel</span></button>
-        <button type="button" class="btn btn--ghost" id="btnSettings">Данные<span class="hide-sm"> и настройки</span></button>
+        <button type="button" class="btn btn--ghost" id="btnImport"><span>Загрузить<span class="hide-sm"> из Excel</span></span></button>
+        <button type="button" class="btn btn--ghost" id="btnSettings"><span>Данные<span class="hide-sm"> и настройки</span></span></button>
       </nav>
     </div>
   </header>
@@ -32,6 +32,9 @@
       <div class="entry__card">
         <div class="entry__head">
           <h2 id="entryTitle" class="h2">Новая запись</h2>
+          <button type="button" class="iconbtn sheet-only" id="sheetClose" aria-label="Закрыть форму">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
           <div class="seg seg--small" role="tablist" aria-label="Тип записи">
             <button type="button" role="tab" class="seg__btn" data-form="trip" aria-selected="true">Рейс</button>
             <button type="button" role="tab" class="seg__btn" data-form="expense" aria-selected="false">Расход</button>
@@ -112,7 +115,7 @@
           <button type="button" role="tab" class="seg__btn" data-kind="week" aria-selected="false">Неделя</button>
           <button type="button" role="tab" class="seg__btn" data-kind="month" aria-selected="true">Месяц</button>
           <button type="button" role="tab" class="seg__btn" data-kind="year" aria-selected="false">Год</button>
-          <button type="button" role="tab" class="seg__btn" data-kind="custom" aria-selected="false">Свой период</button>
+          <button type="button" role="tab" class="seg__btn" data-kind="custom" aria-selected="false"><span class="hide-sm">Свой период</span><span class="show-sm">Период</span></button>
         </div>
         <div class="periodnav">
           <button type="button" class="iconbtn" id="prevPeriod" aria-label="Предыдущий период">
@@ -176,7 +179,7 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel panel--journal">
         <div class="panel__head panel__head--wrap">
           <div class="seg seg--small" role="tablist" aria-label="Журнал">
             <button type="button" role="tab" class="seg__btn" data-tab="trips" aria-selected="true">Рейсы <span id="cntTrips" class="seg__count">0</span></button>
@@ -243,6 +246,17 @@
       </div>
     </form>
   </dialog>
+
+  <!-- Нижняя панель на телефоне -->
+  <div class="actionbar" id="actionbar">
+    <button type="button" class="btn btn--primary" data-open="trip">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Рейс
+    </button>
+    <button type="button" class="btn btn--ghost" data-open="expense">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Расход
+    </button>
+  </div>
+  <div class="sheet-backdrop" id="sheetBackdrop" hidden></div>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden>
     <span id="toastText"></span>

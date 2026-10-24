@@ -44,6 +44,7 @@ async function start() {
   bindPeriod();
   bindJournal();
   bindDialogs();
+  bindSheet();
   window.addEventListener('beforeprint', () => { state.printing = true; renderJournal(); });
   window.addEventListener('afterprint', () => { state.printing = false; renderJournal(); });
 
@@ -346,9 +347,9 @@ function tripsTable(list, q) {
     <tbody>${sorted.map((t) => `<tr data-type="trip" data-id="${t.id}" class="${isEditing('trip', t.id) ? 'is-editing' : ''}">
       <td class="date">${P.formatDate(t.date)}</td>
       <td class="route">${escapeHTML(t.route)}</td>
-      <td>${escapeHTML(t.driver)}</td>
+      <td class="driver">${escapeHTML(t.driver)}</td>
       <td class="num">${money(t.cost)}</td>
-      <td>${t.payment ? `<span class="tag tag--${t.payment}">${PAYMENT[t.payment]}</span>` : '<span class="tag">не указано</span>'}</td>
+      <td class="pay">${t.payment ? `<span class="tag tag--${t.payment}">${PAYMENT[t.payment]}</span>` : '<span class="tag">не указано</span>'}</td>
       <td class="comment">${escapeHTML(t.comment)}</td>
       <td class="acts"><button type="button" class="linkbtn" data-edit>Изменить</button><button type="button" class="linkbtn linkbtn--danger" data-del>Удалить</button></td>
     </tr>`).join('')}</tbody>
@@ -517,7 +518,7 @@ function bindForms() {
     }
     resetTripForm({ date, driver: '', payment });
     await afterSave('trip', id, date, verb);
-    tf.route.focus();
+    if (!isSheetMode()) tf.route.focus();
   });
 
   const ef = $('#expenseForm');
@@ -541,10 +542,13 @@ function bindForms() {
     }
     resetExpenseForm({ date, category: rec.category });
     await afterSave('expense', id, date, verb);
-    ef.amount.focus();
+    if (!isSheetMode()) ef.amount.focus();
   });
 
-  $$('[data-cancel]').forEach((b) => b.addEventListener('click', cancelEdit));
+  $$('[data-cancel]').forEach((b) => b.addEventListener('click', () => {
+    cancelEdit();
+    if (isSheetMode()) closeSheet();
+  }));
 }
 
 async function afterSave(type, id, date, verb) {
@@ -557,6 +561,11 @@ async function afterSave(type, id, date, verb) {
   state.tab = type === 'trip' ? 'trips' : 'expenses';
   state.highlight = { type, id };
   await refreshSuggestions();
+  if (isSheetMode()) {
+    // на телефоне закрываем панель и показываем табличку с итогом
+    closeSheet();
+    $('.periodbar').scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
+  }
   await render({ flash: true });
   const s = state.data.stats;
   toast(`${verb}. За ${P.periodPhrase(state.period)}: рейсы ${money(s.tripsTotal)}, остаток ${s.balance < 0 ? '−' : ''}${money(Math.abs(s.balance))}`);
@@ -594,7 +603,8 @@ async function startEdit(type, id) {
     f.amount.focus();
   }
   renderJournal();
-  if (window.matchMedia('(max-width: 960px)').matches) $('.entry').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (isSheetMode()) openSheet();
+  else if (window.matchMedia('(max-width: 960px)').matches) $('.entry').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function endEdit() {
@@ -610,6 +620,57 @@ function cancelEdit() {
   resetTripForm();
   resetExpenseForm();
   renderJournal();
+}
+
+// ======================================================================
+// Нижняя панель с формой (телефон и телефон в альбомной ориентации)
+// ======================================================================
+const SHEET_MQ = window.matchMedia('(max-width: 640px), (max-width: 960px) and (max-height: 540px)');
+const isSheetMode = () => SHEET_MQ.matches;
+const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sheetIsOpen = () => $('.entry').classList.contains('is-open');
+
+function openSheet(type) {
+  if (type) switchForm(type);
+  $('.entry').classList.add('is-open');
+  document.documentElement.classList.add('sheet-open');
+  $('#sheetBackdrop').hidden = false;
+  // кнопка «Назад» на Android закрывает панель, а не уходит со страницы
+  if (!(history.state && history.state.sheet)) history.pushState({ sheet: true }, '');
+  setTimeout(() => {
+    const f = state.formType === 'trip' ? $('#tripForm') : $('#expenseForm');
+    const target = state.formType === 'trip' ? (f.route.value ? f.cost : f.route) : f.amount;
+    target.focus({ preventScroll: true });
+  }, 60);
+}
+
+function closeSheet({ fromHistory = false } = {}) {
+  if (!sheetIsOpen()) return;
+  $('.entry').classList.remove('is-open');
+  document.documentElement.classList.remove('sheet-open');
+  $('#sheetBackdrop').hidden = true;
+  if (document.activeElement && document.activeElement.closest('.entry')) document.activeElement.blur();
+  if (!fromHistory && history.state && history.state.sheet) history.back();
+}
+
+function bindSheet() {
+  $$('[data-open]').forEach((b) => b.addEventListener('click', () => {
+    if (state.editing) cancelEdit();
+    openSheet(b.dataset.open);
+  }));
+  const dismiss = () => {
+    if (state.editing) cancelEdit();
+    closeSheet();
+  };
+  $('#sheetClose').addEventListener('click', dismiss);
+  $('#sheetBackdrop').addEventListener('click', dismiss);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && sheetIsOpen()) dismiss();
+  });
+  window.addEventListener('popstate', () => closeSheet({ fromHistory: true }));
+  SHEET_MQ.addEventListener('change', () => {
+    if (!isSheetMode()) closeSheet();
+  });
 }
 
 // ======================================================================
