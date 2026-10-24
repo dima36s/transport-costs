@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Учёт рейсов и расходов</title>
+  <meta name="description" content="Журнал рейсов и расходов на транспорт: ввод, итоги по неделям, месяцам и годам, отчёт в Excel">
+  <meta name="theme-color" content="#1B4F9C">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='1' y='1' width='30' height='30' rx='6' fill='%231B4F9C'/%3E%3Crect x='3.5' y='3.5' width='25' height='25' rx='4' fill='none' stroke='white' stroke-width='1.6'/%3E%3Cpath d='M9 21h14M9 16h14M9 11h9' stroke='white' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans+Extra+Condensed:wght@500;600;700&family=Fira+Sans:wght@400;500;600&display=swap&subset=cyrillic" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="./" aria-label="Учёт рейсов, на главную">
+        <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="6"/><rect class="brand__inset" x="3.5" y="3.5" width="25" height="25" rx="4"/><path d="M9 21h14M9 16h14M9 11h9"/></svg>
+        <span>Учёт рейсов</span>
+      </a>
+      <nav class="topbar__actions" aria-label="Данные">
+        <button type="button" class="btn btn--ghost" id="btnImport">Загрузить<span class="hide-sm"> из Excel</span></button>
+        <button type="button" class="btn btn--ghost" id="btnSettings">Данные<span class="hide-sm"> и настройки</span></button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- ФОРМА ВВОДА -->
+    <aside class="entry" aria-labelledby="entryTitle">
+      <div class="entry__card">
+        <div class="entry__head">
+          <h2 id="entryTitle" class="h2">Новая запись</h2>
+          <div class="seg seg--small" role="tablist" aria-label="Тип записи">
+            <button type="button" role="tab" class="seg__btn" data-form="trip" aria-selected="true">Рейс</button>
+            <button type="button" role="tab" class="seg__btn" data-form="expense" aria-selected="false">Расход</button>
+          </div>
+        </div>
+
+        <form id="tripForm" class="form" autocomplete="off" novalidate>
+          <div class="field">
+            <label for="tDate">Дата</label>
+            <input id="tDate" name="date" type="date" required>
+          </div>
+          <div class="field">
+            <label for="tRoute">Рейс (маршрут)</label>
+            <input id="tRoute" name="route" type="text" list="routesList" placeholder="Воронеж — Москва" required>
+            <datalist id="routesList"></datalist>
+          </div>
+          <div class="field">
+            <label for="tDriver">Водитель</label>
+            <input id="tDriver" name="driver" type="text" list="driversList" placeholder="Имя водителя">
+            <datalist id="driversList"></datalist>
+            <div class="chips" id="driverChips" aria-label="Частые водители"></div>
+          </div>
+          <div class="field">
+            <label for="tCost">Стоимость, ₽</label>
+            <input id="tCost" name="cost" type="text" inputmode="decimal" placeholder="0">
+            <p class="field__hint" id="tCostHint" aria-live="polite"></p>
+          </div>
+          <fieldset class="field">
+            <legend>Оплата</legend>
+            <div class="radios">
+              <label class="radio"><input type="radio" name="payment" value="bn" checked><span>Безнал</span></label>
+              <label class="radio"><input type="radio" name="payment" value="cash"><span>Нал</span></label>
+              <label class="radio"><input type="radio" name="payment" value="own"><span>Наш груз</span></label>
+            </div>
+          </fieldset>
+          <div class="field">
+            <label for="tComment">Комментарий</label>
+            <input id="tComment" name="comment" type="text" placeholder="Например: 7 утра, РБЕ">
+          </div>
+          <p class="form__error" role="alert" hidden></p>
+          <div class="form__actions">
+            <button type="submit" class="btn btn--primary btn--wide">Добавить рейс</button>
+            <button type="button" class="btn btn--ghost" data-cancel hidden>Отменить</button>
+          </div>
+        </form>
+
+        <form id="expenseForm" class="form" autocomplete="off" novalidate hidden>
+          <div class="field">
+            <label for="eDate">Дата</label>
+            <input id="eDate" name="date" type="date" required>
+          </div>
+          <div class="field">
+            <label for="eCategory">Статья расхода</label>
+            <select id="eCategory" name="category"></select>
+          </div>
+          <div class="field">
+            <label for="eAmount">Сумма, ₽</label>
+            <input id="eAmount" name="amount" type="text" inputmode="decimal" placeholder="0" required>
+          </div>
+          <div class="field">
+            <label for="eComment">За что</label>
+            <input id="eComment" name="comment" type="text" placeholder="Например: ТО Гена, штраф ГАИ">
+          </div>
+          <p class="form__error" role="alert" hidden></p>
+          <div class="form__actions">
+            <button type="submit" class="btn btn--primary btn--wide">Добавить расход</button>
+            <button type="button" class="btn btn--ghost" data-cancel hidden>Отменить</button>
+          </div>
+        </form>
+      </div>
+      <p class="entry__note">Записи сохраняются в базе этого браузера сразу после добавления. Резервная копия — в разделе «Данные и настройки».</p>
+    </aside>
+
+    <!-- РЕЗУЛЬТАТЫ -->
+    <section class="results" aria-labelledby="periodTitle">
+      <div class="periodbar">
+        <div class="seg" role="tablist" aria-label="Период">
+          <button type="button" role="tab" class="seg__btn" data-kind="week" aria-selected="false">Неделя</button>
+          <button type="button" role="tab" class="seg__btn" data-kind="month" aria-selected="true">Месяц</button>
+          <button type="button" role="tab" class="seg__btn" data-kind="year" aria-selected="false">Год</button>
+          <button type="button" role="tab" class="seg__btn" data-kind="custom" aria-selected="false">Свой период</button>
+        </div>
+        <div class="periodnav">
+          <button type="button" class="iconbtn" id="prevPeriod" aria-label="Предыдущий период">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+          </button>
+          <div class="periodnav__title">
+            <h1 id="periodTitle" class="period-title">—</h1>
+            <span id="periodSub" class="period-sub"></span>
+          </div>
+          <button type="button" class="iconbtn" id="nextPeriod" aria-label="Следующий период">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+          </button>
+          <button type="button" class="btn btn--ghost btn--small" id="toToday">Сегодня</button>
+        </div>
+        <div class="customrange" id="customRange" hidden>
+          <label>с <input type="date" id="customFrom"></label>
+          <label>по <input type="date" id="customTo"></label>
+        </div>
+      </div>
+
+      <!-- Главный итог — в виде дорожного указателя -->
+      <div class="sign" id="sign" aria-live="polite">
+        <div class="sign__inset">
+          <dl class="sign__rows">
+            <div class="sign__row">
+              <dt>Рейсы</dt>
+              <dd id="sTrips">0 ₽</dd>
+            </div>
+            <div class="sign__row">
+              <dt>Расходы</dt>
+              <dd id="sExpenses">0 ₽</dd>
+            </div>
+            <div class="sign__row sign__row--total">
+              <dt>Остаток</dt>
+              <dd id="sBalance">0 ₽</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <ul class="facts" id="facts"></ul>
+
+      <div class="panel">
+        <div class="panel__head">
+          <h2 class="h2" id="chartTitle">По дням</h2>
+          <ul class="legend" id="legend"></ul>
+        </div>
+        <div class="chart" id="chart"></div>
+      </div>
+
+      <div class="grid2">
+        <div class="panel">
+          <h2 class="h2">По водителям</h2>
+          <div id="drivers"></div>
+        </div>
+        <div class="panel">
+          <h2 class="h2">По оплате</h2>
+          <div id="payments"></div>
+          <h2 class="h2 h2--spaced">Расходы по статьям</h2>
+          <div id="categories"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel__head panel__head--wrap">
+          <div class="seg seg--small" role="tablist" aria-label="Журнал">
+            <button type="button" role="tab" class="seg__btn" data-tab="trips" aria-selected="true">Рейсы <span id="cntTrips" class="seg__count">0</span></button>
+            <button type="button" role="tab" class="seg__btn" data-tab="expenses" aria-selected="false">Расходы <span id="cntExpenses" class="seg__count">0</span></button>
+          </div>
+          <input type="search" id="search" class="search" placeholder="Поиск по маршруту, водителю, комментарию" aria-label="Поиск по журналу">
+        </div>
+        <div class="tablewrap" id="journal"></div>
+      </div>
+
+      <div class="exportbar">
+        <button type="button" class="btn btn--primary" id="btnReport">Скачать отчёт в Excel</button>
+        <button type="button" class="btn btn--ghost" id="btnPrint">Распечатать / PDF</button>
+        <p class="exportbar__note" id="reportNote"></p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Импорт -->
+  <dialog class="dialog" id="importDialog" aria-labelledby="importTitle">
+    <form method="dialog" class="dialog__body">
+      <h2 class="h2" id="importTitle">Загрузить рейсы из Excel</h2>
+      <p class="muted">Подходит ваш журнал в формате «N, Дата, Рейс, Водитель, Стоимость, Комментарий». Читаются все листы; колонки «Расходы» и «За что» загружаются как расходы. Уже загруженные строки повторно не добавятся.</p>
+      <label class="filedrop" id="fileDrop">
+        <input type="file" id="importFile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+        <span id="fileDropText">Выберите файл .xlsx или перетащите его сюда</span>
+      </label>
+      <div id="importPreview"></div>
+      <div class="dialog__actions">
+        <button type="button" class="btn btn--primary" id="importConfirm" disabled>Загрузить</button>
+        <button value="cancel" class="btn btn--ghost">Закрыть</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Настройки -->
+  <dialog class="dialog" id="settingsDialog" aria-labelledby="settingsTitle">
+    <form method="dialog" class="dialog__body">
+      <h2 class="h2" id="settingsTitle">Данные и настройки</h2>
+      <p class="muted" id="dbInfo"></p>
+
+      <div class="field field--inline">
+        <label for="vatRate">Ставка НДС для безналичных рейсов, %</label>
+        <input id="vatRate" type="text" inputmode="decimal" class="input--short">
+      </div>
+
+      <h3 class="h3">Резервная копия</h3>
+      <p class="muted">База хранится в этом браузере на этом устройстве. Сохраните копию, чтобы перенести данные на другой компьютер или не потерять их при очистке браузера.</p>
+      <div class="row-actions">
+        <button type="button" class="btn btn--ghost" id="btnBackup">Сохранить копию базы</button>
+        <label class="btn btn--ghost">
+          Восстановить из копии
+          <input type="file" id="restoreFile" accept=".json,application/json" hidden>
+        </label>
+      </div>
+
+      <h3 class="h3">Очистка</h3>
+      <div class="row-actions">
+        <button type="button" class="btn btn--danger" id="btnWipe">Удалить все записи</button>
+      </div>
+
+      <div class="dialog__actions">
+        <button value="close" class="btn btn--primary">Готово</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+    <span id="toastText"></span>
+    <button type="button" class="toast__action" id="toastAction" hidden></button>
+  </div>
+
+  <div id="tooltip" class="tooltip" role="presentation" hidden></div>
+
+  <script src="vendor/dexie.min.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
