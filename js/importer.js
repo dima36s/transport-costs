@@ -131,13 +131,18 @@ export function detectPayment(comment, costRaw) {
   return '';
 }
 
+// \b в JavaScript не понимает кириллицу, поэтому границу слова задаём сами
+const word = (s) => new RegExp(`(^|[^а-яёa-z0-9])(${s})($|[^а-яёa-z0-9])`);
+const W_FUEL = word('дт|газ');
+const W_TO = word('то');
+
 export function detectCategory(what) {
   const t = norm(what);
-  if (/топлив|бензин|дизел|дт\b|солярк|газ\b/.test(t)) return 'Топливо';
+  if (/топлив|бензин|дизел|солярк/.test(t) || W_FUEL.test(t)) return 'Топливо';
   if (/платн|платон|трасс|м-?4|дорог/.test(t)) return 'Платные дороги';
-  if (/\bто\b|ремонт|шин|запчаст|сервис|масл/.test(t)) return 'ТО и ремонт';
+  if (/ремонт|шин|запчаст|сервис|масл/.test(t) || W_TO.test(t)) return 'ТО и ремонт';
   if (/зп|зарплат|оклад|аванс/.test(t)) return 'Зарплата';
-  if (/штра?ф|гаи|гибдд/.test(t)) return 'Штрафы';
+  if (/штр?аф|гаи|гибдд/.test(t)) return 'Штрафы';
   if (/налог|ндс|ндфл/.test(t)) return 'Налоги';
   if (/офис|камера|связь|аренд|интернет/.test(t)) return 'Офис и связь';
   return 'Прочее';
@@ -176,7 +181,15 @@ function parseSheet(sheetName, rows) {
       note(r, `«${expWhat}» — сумма расхода не указана, строка расхода пропущена`);
     }
 
-    if (!route && !driver) continue; // пустые строки, итоги, номера без данных
+    if (!route && !driver) {
+      // пустые строки, итоги, номера без данных. Подписанная сумма без рейса (например «продукты»)
+      // похожа на продажи за месяц — не угадываем дату, а подсказываем внести её вручную
+      const amount = parseAmount(costRaw);
+      if (amount > 0 && comment && !/рейс/i.test(comment)) {
+        note(r, `«${comment}» ${amount.toLocaleString('ru-RU')} ₽ без даты не загружено. Если это продажи — внесите их во вкладке «Продажа»`);
+      }
+      continue;
+    }
 
     let date = parseDate(get(r, 'date'));
     if (!date) {

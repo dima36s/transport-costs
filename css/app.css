@@ -15,7 +15,7 @@
   --sign-deep: #163f7d;
   --sign-ink: #ffffff;
   --marking: #f2b300;
-  --series-trips: #2a78d6;
+  --series-income: #2a78d6;
   --series-exp: #eb6834;
   --bad: #b3261e;
   --good: #1a7f37;
@@ -40,7 +40,7 @@
     --line-2: #2a333c;
     --sign: #1d4f98;
     --sign-deep: #173f7a;
-    --series-trips: #3987e5;
+    --series-income: #3987e5;
     --series-exp: #d95926;
     --bad: #ff8a80;
     --good: #6fd08c;
@@ -60,7 +60,7 @@
   --line-2: #2a333c;
   --sign: #1d4f98;
   --sign-deep: #173f7a;
-  --series-trips: #3987e5;
+  --series-income: #3987e5;
   --series-exp: #d95926;
   --bad: #ff8a80;
   --good: #6fd08c;
@@ -231,7 +231,8 @@ button, input, select { font: inherit; color: inherit; }
 }
 .entry__note { margin: 10px 4px 0; color: var(--ink-3); font-size: 13px; }
 .entry__head { flex-wrap: wrap; }
-.entry__head .seg { flex-wrap: nowrap; }
+.entry__head .seg { order: 3; width: 100%; display: flex; flex-wrap: nowrap; }
+.entry__head .seg__btn { flex: 1; min-width: 0; padding: 6px 2px; font-size: 14px; white-space: nowrap; }
 .entry--editing .entry__card { border-color: var(--sign); box-shadow: 0 0 0 1px var(--sign); }
 
 .form { display: grid; gap: 12px; }
@@ -283,8 +284,48 @@ button, input, select { font: inherit; color: inherit; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .radio input:checked + span { color: var(--ink); } }
 .radio input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: 2px; }
 
+.radios--2 { grid-template-columns: repeat(2, 1fr); }
+
+/* срок хранения: две даты в строку */
+.range2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.range2 label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); min-width: 0; }
+.field .range2 input[type="date"] { width: auto; flex: 1 1 0; min-width: 0; padding-left: 8px; padding-right: 6px; }
+
 .form__error { margin: 0; color: var(--bad); font-size: 14px; }
 .form__actions { display: flex; gap: 8px; margin-top: 4px; }
+
+/* ---------- направления: Всё / Рейсы / Продажи / Хранение ---------- */
+.scopebar {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.scopebar::-webkit-scrollbar { display: none; }
+.scope__btn {
+  position: relative;
+  border: 0;
+  background: none;
+  padding: 6px 14px 10px;
+  font: 600 20px/1.1 var(--font-cond);
+  letter-spacing: 0.01em;
+  color: var(--ink-3);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.scope__btn:hover { color: var(--ink); }
+.scope__btn[aria-selected="true"] { color: var(--ink); }
+.scope__btn[aria-selected="true"]::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--focus);
+}
 
 /* ---------- период ---------- */
 .periodbar {
@@ -319,17 +360,19 @@ button, input, select { font: inherit; color: inherit; }
   border-radius: 9px;
   padding: 14px 22px 12px;
 }
+.sign { min-width: 0; }
 .sign__rows { margin: 0; display: grid; gap: 2px; }
 .sign__row {
   display: flex;
+  flex-wrap: wrap; /* на очень узком экране сумма уходит на свою строку, а не за край */
   align-items: baseline;
   justify-content: space-between;
-  gap: 16px;
+  gap: 0 16px;
   font-family: var(--font-cond);
 }
 .sign__row dt { font-size: 22px; font-weight: 500; opacity: 0.92; }
 .sign__row dd {
-  margin: 0;
+  margin: 0 0 0 auto;
   font-size: 34px;
   font-weight: 600;
   line-height: 1.15;
@@ -344,6 +387,11 @@ button, input, select { font: inherit; color: inherit; }
 .sign__row--total dt { font-size: 26px; font-weight: 600; opacity: 1; }
 .sign__row--total dd { font-size: 48px; font-weight: 700; }
 .sign__row--total dd.is-negative { color: #ffd2cc; }
+/* в режиме «Всё» строк больше — они чуть ниже */
+.sign--multi .sign__row dt { font-size: 20px; }
+.sign--multi .sign__row dd { font-size: 29px; }
+.sign--multi .sign__row--total dt { font-size: 26px; }
+.sign--multi .sign__row--total dd { font-size: 46px; }
 .sign.is-updated .sign__inset { animation: sign-flash 0.9s ease-out; }
 @keyframes sign-flash {
   0% { background: rgba(255, 255, 255, 0.18); }
@@ -355,6 +403,10 @@ button, input, select { font: inherit; color: inherit; }
   .sign__row dd { font-size: 26px; }
   .sign__row--total dt { font-size: 21px; }
   .sign__row--total dd { font-size: 34px; }
+  .sign--multi .sign__row dt { font-size: 17px; }
+  .sign--multi .sign__row dd { font-size: 23px; }
+  .sign--multi .sign__row--total dt { font-size: 21px; }
+  .sign--multi .sign__row--total dd { font-size: 33px; }
   .period-title { font-size: 23px; }
 }
 
@@ -406,7 +458,7 @@ button, input, select { font: inherit; color: inherit; }
 .chart .tick { fill: var(--ink-3); font-size: 11px; font-family: var(--font); }
 .chart .xlabel { fill: var(--ink-3); font-size: 11px; font-family: var(--font); text-anchor: middle; }
 .chart .xlabel.weekend { fill: var(--ink-2); font-weight: 600; }
-.chart .bar-trips { fill: var(--series-trips); }
+.chart .bar-income { fill: var(--series-income); }
 .chart .bar-exp { fill: var(--series-exp); }
 .chart .hit { fill: transparent; cursor: default; }
 .chart .hit:hover, .chart .hit.is-active { fill: color-mix(in srgb, var(--ink) 5%, transparent); }
@@ -428,6 +480,7 @@ button, input, select { font: inherit; color: inherit; }
 .tooltip b { font-weight: 600; }
 .tooltip .tt-row { display: flex; align-items: center; gap: 7px; }
 .tooltip i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.tooltip .tt-sub { padding-left: 17px; opacity: 0.8; font-size: 12.5px; }
 
 /* ---------- сводные таблицы ---------- */
 .mini { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -437,9 +490,21 @@ button, input, select { font: inherit; color: inherit; }
 .mini .num { text-align: right; white-space: nowrap; padding-right: 0; }
 .mini .share { width: 34%; }
 .sharebar { height: 8px; border-radius: 4px; background: var(--line-2); overflow: hidden; }
-.sharebar > span { display: block; height: 100%; border-radius: 4px; background: var(--series-trips); }
+.sharebar > span { display: block; height: 100%; border-radius: 4px; background: var(--series-income); }
 .sharebar--exp > span { background: var(--series-exp); }
 .mini .variants { display: block; font-size: 12px; color: var(--ink-3); }
+
+/* по направлениям */
+.grid2 > .panel { container-type: inline-size; }
+.dirs .sub { display: none; font-size: 12px; color: var(--ink-3); }
+.dirs .neg { color: var(--bad); }
+.dirs tr.is-general td:first-child { color: var(--ink-2); }
+.dirs tfoot td { font-weight: 600; border-top: 1px solid var(--ink-3); border-bottom: 0; }
+.dirs tfoot .sub { font-weight: 400; }
+@container (max-width: 400px) {
+  .dirs .c-inc, .dirs .c-exp { display: none; }
+  .dirs .sub { display: block; }
+}
 .empty { color: var(--ink-3); margin: 6px 0; font-size: 14px; }
 
 /* ---------- журнал ---------- */
@@ -460,6 +525,7 @@ button, input, select { font: inherit; color: inherit; }
 .journal .date { white-space: nowrap; color: var(--ink-2); }
 .journal .route { font-weight: 500; }
 .journal .comment { color: var(--ink-2); }
+.journal .term { white-space: nowrap; color: var(--ink-2); }
 .journal .acts { white-space: nowrap; text-align: right; padding-right: 0; width: 1%; }
 .journal tfoot td { font-weight: 600; border-bottom: 0; border-top: 1px solid var(--ink-3); }
 .journal tr.is-new td { animation: row-flash 1.6s ease-out; }
@@ -570,7 +636,7 @@ button, input, select { font: inherit; color: inherit; }
   .results { gap: 10px; }
   .panel { border: 1px solid #bbb; box-shadow: none; break-inside: avoid; }
   .sign { box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .chart .bar-trips, .chart .bar-exp, .legend i, .sharebar > span { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .chart .bar-income, .chart .bar-exp, .legend i, .sharebar > span { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .grid2 { grid-template-columns: 1fr 1fr; }
   .tablewrap { overflow: visible; margin: 0; padding: 0; }
   .journal { min-width: 0; }
@@ -614,7 +680,7 @@ button, input, select { font: inherit; color: inherit; }
 @media (min-width: 641px) and (max-width: 960px) {
   .topbar__inner, .layout { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
   .form { grid-template-columns: 1fr 1fr; column-gap: 14px; align-items: start; }
-  .form .form__error, .form .form__actions { grid-column: 1 / -1; }
+  .form .form__error, .form .form__actions, .form .field--span { grid-column: 1 / -1; }
   .form__actions .btn--wide { flex: 0 1 320px; }
   .entry__note { margin-top: 8px; }
   .periodbar { gap: 12px; }
@@ -622,7 +688,7 @@ button, input, select { font: inherit; color: inherit; }
 
 /* ---------- телефон (и телефон в альбомной ориентации) ---------- */
 @media (max-width: 640px), (max-width: 960px) and (max-height: 540px) {
-  body { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+  body { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 
   /* форма — выезжающая снизу панель */
   .entry {
@@ -680,30 +746,49 @@ button, input, select { font: inherit; color: inherit; }
 
   /* нижняя панель с кнопками добавления */
   .actionbar {
-    display: flex;
-    gap: 10px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
     z-index: 30;
-    padding: 10px max(16px, env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom));
+    padding: 8px max(10px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom));
     background: color-mix(in srgb, var(--surface) 94%, transparent);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     border-top: 1px solid var(--line);
   }
-  .actionbar .btn { flex: 1; min-height: 48px; font-size: 16px; }
-  .actionbar svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+  .abtn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+    min-height: 54px;
+    padding: 6px 2px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--ink);
+    font: 500 13px/1.1 var(--font);
+    cursor: pointer;
+  }
+  .abtn span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .abtn svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+  .abtn.is-primary { background: var(--sign); border-color: var(--sign); color: var(--sign-ink); }
 
-  .toast { bottom: calc(84px + env(safe-area-inset-bottom)); }
+  .toast { bottom: calc(90px + env(safe-area-inset-bottom)); }
 }
 
 /* в альбомной ориентации телефона экран низкий — поля формы в две колонки */
 @media (min-width: 641px) and (max-width: 960px) and (max-height: 540px) {
   .entry { max-height: 96dvh; }
   .entry__card { max-width: 760px; margin: 0 auto; }
-  .entry__head .seg { order: 2; width: auto; margin-left: auto; }
+  .entry__head { flex-wrap: nowrap; }
+  .entry__head .seg { order: 2; flex: 1 1 auto; width: auto; max-width: 440px; margin-left: auto; }
   .entry__head .h2 { flex: none; }
   #sheetClose { order: 3; }
   .form { gap: 8px 14px; }
@@ -721,7 +806,9 @@ button, input, select { font: inherit; color: inherit; }
   .results { gap: 12px; }
   .panel { padding: 14px; border-radius: 12px; }
 
-  /* период */
+  /* направления и период */
+  .scope__btn { flex: 1; padding: 6px 4px 10px; font-size: 18px; }
+  .scope__btn[aria-selected="true"]::after { left: 6px; right: 6px; }
   .periodbar { flex-direction: column; align-items: stretch; gap: 10px; }
   .periodbar > .seg { display: flex; }
   .periodbar > .seg .seg__btn { flex: 1; padding: 9px 4px; }
@@ -775,6 +862,7 @@ button, input, select { font: inherit; color: inherit; }
       "date pay"
       "route cost"
       "driver driver"
+      "term term"
       "comment comment"
       "acts acts";
     gap: 2px 12px;
@@ -790,7 +878,8 @@ button, input, select { font: inherit; color: inherit; }
   .journal tbody td.num { grid-area: cost; font-weight: 600; font-size: 15.5px; }
   .journal tbody td.driver { grid-area: driver; color: var(--ink-2); }
   .journal tbody td.comment { grid-area: comment; font-size: 13.5px; }
-  .journal tbody td.driver:empty, .journal tbody td.comment:empty { display: none; }
+  .journal tbody td.term { grid-area: term; font-size: 13.5px; white-space: normal; }
+  .journal tbody td.driver:empty, .journal tbody td.comment:empty, .journal tbody td.term:empty { display: none; }
   .journal tbody td.acts { grid-area: acts; display: flex; gap: 8px; width: auto; margin-top: 8px; text-align: left; }
   .journal .acts .linkbtn { min-height: 38px; padding: 6px 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); opacity: 1; }
   .journal tr.is-editing { border-color: var(--sign); }
@@ -801,10 +890,18 @@ button, input, select { font: inherit; color: inherit; }
 
 }
 
+/* длинное название — только на широком экране */
+@media (max-width: 760px) {
+  .hide-md { display: none; }
+}
+
 /* очень узкие телефоны */
 .brand span { white-space: nowrap; }
 @media (max-width: 374px) {
   .brand span { display: none; }
+  .scope__btn { padding: 6px 2px 10px; font-size: 16px; }
+  .sign--multi .sign__row--total dd { font-size: 28px; }
+  .sign--multi .sign__row--total dt { font-size: 19px; }
 }
 @media (max-width: 420px) {
   .mini .share { display: none; }
